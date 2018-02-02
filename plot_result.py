@@ -172,7 +172,7 @@ def main(result_root_dir, method_label,
     plt.grid()
     plt.legend()
     plt.show()
-    fig.savefig(osp.join(save_dir, './%s_roc_under_diff_distractors.png' % method_label),
+    fig.savefig(osp.join(save_dir, 'roc_under_diff_distractors.png'),
                 bbox_inches='tight')
 
     # plot other methods
@@ -262,7 +262,7 @@ def main(result_root_dir, method_label,
     plt.grid()
     plt.legend()
     plt.show()
-    fig.savefig(osp.join(save_dir, './identification_rank_1_vs_distractors_small.png'),
+    fig.savefig(osp.join(save_dir, 'identification_rank_1_vs_distractors_small.png'),
                 bbox_inches='tight')
 
     print '===> Plotting rank_1 vs #distractors for all the methods'

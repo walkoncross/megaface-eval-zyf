@@ -172,7 +172,7 @@ def calc_target_tpr_and_rank_1(rocs, rank_1, save_dir, method_label=None):
 
 
 #%matplotlib inline
-def plot_result(your_result_dir, your_method_label,
+def plot_megaface_result(your_result_dir, your_method_label,
          probeset_name,
          other_methods_dir=None,
          save_tpr_and_rank1_for_others=False):
@@ -381,7 +381,7 @@ if __name__ == '__main__':
     # save_tpr_and_rank1_for_others = True
 
     for probeset_name in probesets:
-        plot_result(your_result_dir, your_method_label,
+        plot_megaface_result(your_result_dir, your_method_label,
              probeset_name,
              other_methods_dir,
              save_tpr_and_rank1_for_others

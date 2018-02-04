@@ -276,7 +276,7 @@ def plot_megaface_result(your_result_dir, your_method_label,
 
     plt.grid()
     plt.legend(loc='lower right')
-    #plt.show()
+    plt.show()
     fig.savefig(osp.join(save_dir, 'roc_under_diff_distractors.png'),
                 bbox_inches='tight')
 
@@ -290,7 +290,7 @@ def plot_megaface_result(your_result_dir, your_method_label,
 
     plt.grid()
     plt.legend(loc='lower right')
-    #plt.show()
+    plt.show()
     fig.savefig(osp.join(save_dir, 'cmc_under_diff_distractors.png'),
                 bbox_inches='tight')
 
@@ -362,7 +362,7 @@ def plot_megaface_result(your_result_dir, your_method_label,
     plt.rcParams['figure.figsize'] = (10.0, 8.0)  # set default size of plots
     plt.grid()
 #    plt.legend()
-    #plt.show()
+    plt.show()
     fig.savefig(osp.join(save_dir, 'verification_roc_10K.png'),
                 bbox_inches='tight')
 
@@ -395,7 +395,7 @@ def plot_megaface_result(your_result_dir, your_method_label,
     plt.rcParams['figure.figsize'] = (10.0, 8.0)  # set default size of plots
     plt.grid()
 #    plt.legend()
-    #plt.show()
+    plt.show()
     fig.savefig(osp.join(save_dir, 'verification_roc_1M.png'),
                 bbox_inches='tight')
 
@@ -427,7 +427,7 @@ def plot_megaface_result(your_result_dir, your_method_label,
     plt.rcParams['figure.figsize'] = (10.0, 8.0)  # set default size of plots
     plt.grid()
 #    plt.legend()
-    #plt.show()
+    plt.show()
     fig.savefig(osp.join(save_dir, 'identification_recall_vs_rank_10K.png'),
                 bbox_inches='tight')
 
@@ -459,7 +459,7 @@ def plot_megaface_result(your_result_dir, your_method_label,
     plt.rcParams['figure.figsize'] = (10.0, 8.0)  # set default size of plots
     plt.grid()
 #    plt.legend()
-    #plt.show()
+    plt.show()
     fig.savefig(osp.join(save_dir, 'identification_recall_vs_rank_1M.png'),
                 bbox_inches='tight')
 
@@ -475,7 +475,7 @@ def plot_megaface_result(your_result_dir, your_method_label,
     #     plt.xscale('log')
     #     plt.grid()
     #     plt.legend()
-    #     #plt.show()
+    #     plt.show()
     #     fig.savefig(osp.join(save_dir, 'identification_rank_1_vs_distractors_small.png'),
     #                 bbox_inches='tight')
 
@@ -505,7 +505,7 @@ def plot_megaface_result(your_result_dir, your_method_label,
     plt.rcParams['figure.figsize'] = (10.0, 8.0)  # set default size of plots
     plt.grid()
 #    plt.legend()
-    #plt.show()
+    plt.show()
     fig.savefig(osp.join(save_dir, 'identification_rank_1_vs_distractors.png'),
                 bbox_inches='tight')
 

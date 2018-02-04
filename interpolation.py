@@ -11,7 +11,7 @@ def bilinear_interp(x, x1, x2, y1, y2):
     assert(x >= x1)
     assert(x <= x2)
 
-    dx12 = x2 - x1
+    dx12 = float(x2 - x1)
     f1 = (x - x1) / dx12
     f2 = (x2 - x) / dx12
 

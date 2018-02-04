@@ -29,6 +29,43 @@ def generate_n_distractors():
 n_distractors = generate_n_distractors()
 
 
+def interp_target_tpr(roc, target_fpr):
+    if(target_fpr < roc[0][0] or target_fpr > roc[0][-1]):
+        print 'target_fpr out of bound, will return -1'
+        return -1.0
+
+    for i, fpr in enumerate(roc[0]):
+        if fpr > target_fpr:
+            break
+
+    target_tpr = bilinear_interp(target_fpr,
+                                 roc[0][i - 1], roc[0][i],
+                                 roc[1][i - 1], roc[1][i]
+                                 )
+
+    return target_tpr
+
+
+def interp_target_rank_recall(cmc, target_rank):
+    if(target_rank < cmc[0][0] or target_rank > cmc[0][-1]):
+        print 'target_fpr out of bound, will return -1'
+        return -1.0
+
+    for i, rank in enumerate(cmc[0]):
+        if rank > target_rank:
+            break
+
+    if cmc[0][i - 1] == target_rank:
+        target_recall = cmc[1][i - 1]
+    else:
+        target_recall = bilinear_interp(target_rank,
+                                        cmc[0][i - 1], cmc[0][i],
+                                        cmc[1][i - 1], cmc[1][i]
+                                        )
+
+    return target_recall
+
+
 def load_result_data(folder, probeset_name):
     #    n_distractors = generate_n_distractors()
     print '===> Load result data from ', folder
@@ -47,22 +84,38 @@ def load_result_data(folder, probeset_name):
         with open(os.path.join(folder, filename), 'r') as f:
             cmc_dict[n_distractors[i]] = json.load(f)
 
-    rank_1 = [cmc_dict[n]['cmc'][1][0]
-              for n in n_distractors]
-
     rocs = []
 
     for i in n_distractors:
         rocs.append(cmc_dict[i]['roc'])
 
+    cmcs = []
+
+    for i in n_distractors:
+        for j in range(len(cmc_dict[i]['cmc'][0])):
+            cmc_dict[i]['cmc'][0][j] += 1
+
+        cmcs.append(cmc_dict[i]['cmc'])
+
+    rank_1 = [cmc_dict[n]['cmc'][1][0]
+              for n in n_distractors]
+
+    rank_10 = []
+    for i in range(len(n_distractors)):
+        target_recall = interp_target_rank_recall(cmcs[i], 10)
+        rank_10.append(target_recall)
+
     roc_10K = cmc_dict[10000]['roc']
     roc_1M = cmc_dict[1000000]['roc']
 
-    return {'rank_1': rank_1,
-            'rocs': rocs,
-            'roc_10k': roc_10K,
-            'roc_1M': roc_1M
-            }
+    return {
+        'rocs': rocs,
+        'cmcs': cmcs,
+        'rank_1': rank_1,
+        'rank_10': rank_10,
+        'roc_10k': roc_10K,
+        'roc_1M': roc_1M
+    }
 
 
 # def load_your_result(your_result_dir, probeset_name, feat_ending=None):
@@ -118,28 +171,12 @@ def load_result_data(folder, probeset_name):
 #             }
 
 
-def interp_target_tpr(roc, target_fpr):
-    if(target_fpr < roc[0][0] or target_fpr > roc[0][-1]):
-        print 'target_fpr out of bound, will return -1'
-        return -1.0
-
-    for i, fpr in enumerate(roc[0]):
-        if fpr > target_fpr:
-            break
-
-    target_tpr = bilinear_interp(target_fpr,
-                                 roc[0][i - 1], roc[0][i],
-                                 roc[1][i - 1], roc[1][i]
-                                 )
-
-    return target_tpr
-
-
-def calc_target_tpr_and_rank_1(rocs, rank_1, save_dir, method_label=None):
+def calc_target_tpr_and_rank(rocs, rank_1, rank_10, save_dir, method_label=None):
     print '===> Calc and save TPR@FPR=1e-6 for method: ', method_label
     target_fpr = 1e-6
     fn_tpr = osp.join(save_dir, 'TPRs-at-FPR_%g' % target_fpr)
-    fn_rank = osp.join(save_dir, 'Rank_1_vs_distractors')
+    fn_rank = osp.join(save_dir, 'rank_vs_distractors')
+
     if method_label:
         fn_tpr += '_' + method_label
         fn_rank += '_' + method_label
@@ -151,31 +188,48 @@ def calc_target_tpr_and_rank_1(rocs, rank_1, save_dir, method_label=None):
 
     fp_tpr = open(fn_tpr, 'w')
 
+    write_string = 'TPR@FPR=%g at different #distractors\n' % target_fpr
+    write_string += '#distractors  TPR\n'
+    print write_string
+    fp_tpr.write(write_string)
     for i, roc in enumerate(rocs):
         target_tpr = interp_target_tpr(roc, target_fpr)
-        write_string = 'TPR@FPR=%g (with %7d distractors): %5.4f\n' % (target_fpr,
-                                                                       n_distractors[i], target_tpr)
+        write_string = '%7d %5.4f\n' % (n_distractors[i], target_tpr)
         print write_string
-
         fp_tpr.write(write_string)
+
     fp_tpr.close()
 
     print '===> Save Rank_1 under different #distractors for method: ', method_label
     fp_rank = open(fn_rank, 'w')
-    for i, rank in enumerate(rank_1):
-        write_string = 'Rank_1 (with %7d distractors): %5.4f\n' % (
-            n_distractors[i], rank)
-        print write_string
+    write_string = 'Rank_1 recall at different #distractors\n'
+    write_string += '#distractors  recall\n'
+    print write_string
+    fp_rank.write(write_string)
 
+    for i, rank in enumerate(rank_1):
+        write_string = '%7d  %5.4f\n' % (n_distractors[i], rank)
+        print write_string
         fp_rank.write(write_string)
+
+    write_string = '\nRank_10 recall at different #distractors\n'
+    write_string += '#distractors  recall\n'
+    print write_string
+    fp_rank.write(write_string)
+
+    for i, rank in enumerate(rank_10):
+        write_string = '%7d  %5.4f\n' % (n_distractors[i], rank)
+        print write_string
+        fp_rank.write(write_string)
+
     fp_rank.close()
 
 
 #%matplotlib inline
 def plot_megaface_result(your_result_dir, your_method_label,
-         probeset_name,
-         other_methods_dir=None,
-         save_tpr_and_rank1_for_others=False):
+                         probeset_name,
+                         other_methods_dir=None,
+                         save_tpr_and_rank1_for_others=False):
     probeset_name = probeset_name.lower()
     if not probeset_name in ['facescrub', 'fgnet']:
         raise Exception(
@@ -193,29 +247,51 @@ def plot_megaface_result(your_result_dir, your_method_label,
     # your_result = load_your_result(your_result_dir, probeset_name, feat_ending)
     your_result = load_result_data(your_result_dir, probeset_name)
     rocs = your_result['rocs']
+    cmcs = your_result['cmcs']
     rank_1 = your_result['rank_1']
+    rank_10 = your_result['rank_1']
 
-    calc_target_tpr_and_rank_1(rocs, rank_1, save_dir)
+    calc_target_tpr_and_rank(rocs, rank_1, rank_10, save_dir)
 
     print '===> Plotting Verification ROC under different #distractors'
     fig = plt.figure(figsize=(16, 12), dpi=100)
 
-    plt.semilogx(rocs[0][0], rocs[0][1], 'g', label='10')
-    plt.semilogx(rocs[1][0], rocs[1][1], 'r', label='100')
-    plt.semilogx(rocs[2][0], rocs[2][1], 'b', label='1000')
-    plt.semilogx(your_result['roc_10k'][0],
-                 your_result['roc_10k'][1], 'c', label='10000')
-    plt.semilogx(rocs[4][0], rocs[4][1], 'm', label='100000')
-    plt.semilogx(your_result['roc_1M'][0],
-                 your_result['roc_1M'][1], 'y', label='1000000')
+    colors = ['g', 'r', 'b', 'c', 'm', 'y']
+    labels = [str(it) for it in n_distractors]
+
+    # plt.semilogx(rocs[0][0], rocs[0][1], 'g', label='10')
+    # plt.semilogx(rocs[1][0], rocs[1][1], 'r', label='100')
+    # plt.semilogx(rocs[2][0], rocs[2][1], 'b', label='1000')
+    # plt.semilogx(your_result['roc_10k'][0],
+    #              your_result['roc_10k'][1], 'c', label='10000')
+    # plt.semilogx(rocs[4][0], rocs[4][1], 'm', label='100000')
+    # plt.semilogx(your_result['roc_1M'][0],
+    #              your_result['roc_1M'][1], 'y', label='1000000')
+
+    for i in range(len(n_distractors)):
+        plt.semilogx(rocs[i][0], rocs[i][1], colors[i], label=labels[i])
 
     plt.xlim([1e-8, 1])
     plt.ylim([0, 1])
 
     plt.grid()
-    plt.legend()
-    plt.show()
+    plt.legend(loc='lower right')
+    #plt.show()
     fig.savefig(osp.join(save_dir, 'roc_under_diff_distractors.png'),
+                bbox_inches='tight')
+
+    print '===> Plotting Identification CMC under different #distractors'
+    fig = plt.figure(figsize=(16, 12), dpi=100)
+    for i in range(len(n_distractors)):
+        plt.semilogx(cmcs[i][0], cmcs[i][1], colors[i], label=labels[i])
+
+    plt.xlim([1, 1e6])
+    plt.ylim([0, 1])
+
+    plt.grid()
+    plt.legend(loc='lower right')
+    #plt.show()
+    fig.savefig(osp.join(save_dir, 'cmc_under_diff_distractors.png'),
                 bbox_inches='tight')
 
     print '===> Load result data for all the other methods'
@@ -248,14 +324,15 @@ def plot_megaface_result(your_result_dir, your_method_label,
 
             if result_data is not None:
                 other_methods_data[method] = load_result_data(
-                        os.path.join(other_methods_dir, method), probeset_name)
+                    os.path.join(other_methods_dir, method), probeset_name)
         other_method_list = other_methods_data.keys()
 
         if save_tpr_and_rank1_for_others:
             for name in other_method_list:
-                calc_target_tpr_and_rank_1(other_methods_data[name]['rocs'],
-                                        other_methods_data[name]['rank_1'],
-                                        save_dir, name)
+                calc_target_tpr_and_rank(other_methods_data[name]['rocs'],
+                                         other_methods_data[name]['rank_1'],
+                                         other_methods_data[name]['rank_10'],
+                                         save_dir, name)
 
     print '===> Plotting ROC under 10K distractors for your method'
     fig = plt.figure(figsize=(20, 10), dpi=200)
@@ -284,8 +361,8 @@ def plot_megaface_result(your_result_dir, your_method_label,
     ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     plt.rcParams['figure.figsize'] = (10.0, 8.0)  # set default size of plots
     plt.grid()
-    plt.legend()
-    plt.show()
+#    plt.legend()
+    #plt.show()
     fig.savefig(osp.join(save_dir, 'verification_roc_10K.png'),
                 bbox_inches='tight')
 
@@ -317,10 +394,75 @@ def plot_megaface_result(your_result_dir, your_method_label,
     ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     plt.rcParams['figure.figsize'] = (10.0, 8.0)  # set default size of plots
     plt.grid()
-    plt.legend()
-    plt.show()
+#    plt.legend()
+    #plt.show()
     fig.savefig(osp.join(save_dir, 'verification_roc_1M.png'),
                 bbox_inches='tight')
+
+    print '===> Plotting recall vs rank under 10K distractors for your method'
+    fig = plt.figure(figsize=(20, 10), dpi=200)
+    ax = plt.subplot(111)
+    ax.semilogx(your_result['cmcs'][3][0],
+                your_result['cmcs'][3][1], label=your_method_label)
+
+    if other_method_list:
+        print '===> Plotting recall vs rank under 10K distractors for all the other methods'
+
+        for name in other_method_list:
+            ax.semilogx(other_methods_data[name]['cmcs'][3][0],
+                        other_methods_data[name]['cmcs'][3][1],
+                        label=name,
+                        c=np.random.rand(3))
+
+    # Shrink current axis by 20%
+    box = ax.get_position()
+    ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+    ax.set_xlim([1, 1e4])
+    ax.set_ylim([0, 1])
+    ax.set_xlabel('Rank')
+    ax.set_ylabel('Identification Rate (Recall)')
+
+    # Put a legend to the right of the current axis
+    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    plt.rcParams['figure.figsize'] = (10.0, 8.0)  # set default size of plots
+    plt.grid()
+#    plt.legend()
+    #plt.show()
+    fig.savefig(osp.join(save_dir, 'identification_recall_vs_rank_10K.png'),
+                bbox_inches='tight')
+
+    print '===> Plotting recall vs rank under 1M distractors for your method'
+    fig = plt.figure(figsize=(20, 10), dpi=200)
+    ax = plt.subplot(111)
+    ax.semilogx(your_result['cmcs'][-1][0],
+                your_result['cmcs'][-1][1], label=your_method_label)
+
+    if other_method_list:
+        print '===> Plotting recall vs rank under 1M distractors for all the other methods'
+
+        for name in other_method_list:
+            ax.semilogx(other_methods_data[name]['cmcs'][-1][0],
+                        other_methods_data[name]['cmcs'][-1][1],
+                        label=name,
+                        c=np.random.rand(3))
+
+    # Shrink current axis by 20%
+    box = ax.get_position()
+    ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+    ax.set_xlim([1, 1e6])
+    ax.set_ylim([0, 1])
+    ax.set_xlabel('Rank')
+    ax.set_ylabel('Identification Rate (Recall)')
+
+    # Put a legend to the right of the current axis
+    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    plt.rcParams['figure.figsize'] = (10.0, 8.0)  # set default size of plots
+    plt.grid()
+#    plt.legend()
+    #plt.show()
+    fig.savefig(osp.join(save_dir, 'identification_recall_vs_rank_1M.png'),
+                bbox_inches='tight')
+
 
     # if other_method_list:
     #     print '===> Plotting rank_1 vs #distractors for all the other methods'
@@ -333,7 +475,7 @@ def plot_megaface_result(your_result_dir, your_method_label,
     #     plt.xscale('log')
     #     plt.grid()
     #     plt.legend()
-    #     plt.show()
+    #     #plt.show()
     #     fig.savefig(osp.join(save_dir, 'identification_rank_1_vs_distractors_small.png'),
     #                 bbox_inches='tight')
 
@@ -362,8 +504,8 @@ def plot_megaface_result(your_result_dir, your_method_label,
     ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     plt.rcParams['figure.figsize'] = (10.0, 8.0)  # set default size of plots
     plt.grid()
-    plt.legend()
-    plt.show()
+#    plt.legend()
+    #plt.show()
     fig.savefig(osp.join(save_dir, 'identification_rank_1_vs_distractors.png'),
                 bbox_inches='tight')
 
@@ -382,7 +524,7 @@ if __name__ == '__main__':
 
     for probeset_name in probesets:
         plot_megaface_result(your_result_dir, your_method_label,
-             probeset_name,
-             other_methods_dir,
-             save_tpr_and_rank1_for_others
-             )
+                             probeset_name,
+                             other_methods_dir,
+                             save_tpr_and_rank1_for_others
+                             )

@@ -17,7 +17,7 @@ matplotlib.use('agg')
 
 import matplotlib.pyplot as plt
 
-from interpolation import bilinear_interp
+from interpolation import linear_interp, nearest_neighbor_interp
 
 
 def generate_n_distractors():
@@ -34,16 +34,25 @@ def interp_target_tpr(roc, target_fpr):
         print 'target_fpr out of bound, will return -1'
         return -1.0
 
+    # This interpolation might be the one that MegaFace officially uses
     for i, fpr in enumerate(roc[0]):
         if fpr > target_fpr:
-            break
+            return roc[1][i]
 
-    target_tpr = bilinear_interp(target_fpr,
-                                 roc[0][i - 1], roc[0][i],
-                                 roc[1][i - 1], roc[1][i]
-                                 )
+    # linear interpolation
+    # for i, fpr in enumerate(roc[0]):
+    #     if fpr > target_fpr:
+    #         break
 
-    return target_tpr
+    # target_tpr = linear_interp(target_fpr,
+    #                              roc[0][i - 1], roc[0][i],
+    #                              roc[1][i - 1], roc[1][i]
+    #                              )
+
+    # NN interpolation
+#    target_tpr = nearest_neighbor_interp(target_fpr, roc[0], roc[1])
+#
+#    return target_tpr
 
 
 def interp_target_rank_recall(cmc, target_rank):
@@ -51,17 +60,25 @@ def interp_target_rank_recall(cmc, target_rank):
         print 'target_fpr out of bound, will return -1'
         return -1.0
 
+    # This interpolation might be the one that MegaFace officially uses
+    # for i, fpr in enumerate(cmc[0]):
+    #     if fpr > target_rank:
+    #         return cmc[1][i]
+
+    # linear interpolation
     for i, rank in enumerate(cmc[0]):
         if rank > target_rank:
             break
-
     if cmc[0][i - 1] == target_rank:
         target_recall = cmc[1][i - 1]
     else:
-        target_recall = bilinear_interp(target_rank,
-                                        cmc[0][i - 1], cmc[0][i],
-                                        cmc[1][i - 1], cmc[1][i]
-                                        )
+        target_recall = linear_interp(target_rank,
+                                      cmc[0][i - 1], cmc[0][i],
+                                      cmc[1][i - 1], cmc[1][i]
+                                      )
+
+    # NN interpolation
+    # target_recall = nearest_neighbor_interp(target_rank, cmc[0], cmc[1])
 
     return target_recall
 
@@ -249,7 +266,7 @@ def plot_megaface_result(your_result_dir, your_method_label,
     rocs = your_result['rocs']
     cmcs = your_result['cmcs']
     rank_1 = your_result['rank_1']
-    rank_10 = your_result['rank_1']
+    rank_10 = your_result['rank_10']
 
     calc_target_tpr_and_rank(rocs, rank_1, rank_10, save_dir)
 
@@ -300,6 +317,12 @@ def plot_megaface_result(your_result_dir, your_method_label,
 
     if other_methods_dir:
         other_method_list = os.listdir(other_methods_dir)
+        for it in other_method_list:
+            if osp.realpath(osp.join(other_methods_dir, it)) is osp.realpath(your_result_dir):
+                print "Remove your_result_dir from other_method_list"
+                other_method_list.remove(it)
+                break
+
     print 'other_method_list: ', other_method_list
 
     # ['3divi',
@@ -463,7 +486,6 @@ def plot_megaface_result(your_result_dir, your_method_label,
     fig.savefig(osp.join(save_dir, 'identification_recall_vs_rank_1M.png'),
                 bbox_inches='tight')
 
-
     # if other_method_list:
     #     print '===> Plotting rank_1 vs #distractors for all the other methods'
     #     fig = plt.figure(figsize=(10, 10), dpi=200)
@@ -517,10 +539,10 @@ if __name__ == '__main__':
     probesets = ['facescrub', 'fgnet']
     # feat_ending = '_feat'
 
-    # other_methods_dir = None
+#    other_methods_dir = None
     other_methods_dir = r'C:\zyf\dataset\megaface\Challenge1External'
     save_tpr_and_rank1_for_others = False
-    # save_tpr_and_rank1_for_others = True
+    save_tpr_and_rank1_for_others = True
 
     for probeset_name in probesets:
         plot_megaface_result(your_result_dir, your_method_label,

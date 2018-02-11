@@ -14,7 +14,7 @@ if __name__ == '__main__':
     ]
 
     my_method_labels = [
-        'FaceX-ZYF-1120'
+        'FaceX'
     ]
 
     # probeset_name = 'facescrub'

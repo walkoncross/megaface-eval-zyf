@@ -83,14 +83,14 @@ def interp_target_rank_recall(cmc, target_rank):
     return target_recall
 
 
-def load_result_data(folder, probeset_name):
+def load_result_data(folder, probe_name):
     #    n_distractors = generate_n_distractors()
     print '===> Load result data from ', folder
 
     all_files = os.listdir(folder)
 #    print 'all_files: ', all_files
     cmc_files = sorted(
-        [a for a in all_files if fnmatch(a, 'cmc*%s*_1.json' % probeset_name)])[::-1]
+        [a for a in all_files if fnmatch(a, 'cmc*%s*_1.json' % probe_name)])[::-1]
 #    print 'cmc_files: ', cmc_files
 
     if not cmc_files:
@@ -135,7 +135,7 @@ def load_result_data(folder, probeset_name):
     }
 
 
-# def load_your_result(your_result_dir, probeset_name, feat_ending=None):
+# def load_your_result(your_method_dirs, probe_name, feat_ending=None):
 #     '''
 #     specify this function, if your result file names are not in the same format
 #     as other methods.
@@ -145,15 +145,15 @@ def load_result_data(folder, probeset_name):
 #     if '.' in feat_ending:
 #         feat_ending = feat_ending.split('.')[0]
 
-#     fn_tmpl = '%s_megaface' % probeset_name
+#     fn_tmpl = '%s_megaface' % probe_name
 #     if feat_ending:
 #         fn_tmpl += feat_ending
 
 #     fn_tmpl += '_{}_1.json'
 
 #     cmc = osp.join(
-#         your_result_dir, 'cmc_' + fn_tmpl)
-# #        your_result_dir, 'cmc_megaface_{}_1.json')
+#         your_method_dirs, 'cmc_' + fn_tmpl)
+# #        your_method_dirs, 'cmc_megaface_{}_1.json')
 #     cmc_files = [cmc.format(i) for i in n_distractors]
 
 #     cmc_dict = {}
@@ -162,8 +162,8 @@ def load_result_data(folder, probeset_name):
 #             cmc_dict[n_distractors[i]] = json.load(f)
 
 # #    matches = osp.join(
-# #        your_result_dir, 'matches_' + fn_tmpl)
-# # your_result_dir, 'matches_megaface_{}_1.json')
+# #        your_method_dirs, 'matches_' + fn_tmpl)
+# # your_method_dirs, 'matches_megaface_{}_1.json')
 # #    matches_files = [
 # #        matches.format(i) for i in n_distractors]
 # #
@@ -243,16 +243,19 @@ def calc_target_tpr_and_rank(rocs, rank_1, rank_10, save_dir, method_label=None)
 
 
 #%matplotlib inline
-def plot_megaface_result(your_result_dir, your_method_label,
-                         probeset_name,
+def plot_megaface_result(your_method_dirs, your_method_labels,
+                         probe_name,
+                         save_dir=None,
                          other_methods_dir=None,
                          save_tpr_and_rank1_for_others=False):
-    probeset_name = probeset_name.lower()
-    if not probeset_name in ['facescrub', 'fgnet']:
+    probe_name = probe_name.lower()
+    valid_probe_names = ['facescrub', 'fgnet', 'idprobe']
+    if not probe_name in valid_probe_names:
         raise Exception(
-            'probeset name must be either "facescrub" or "fgnet" !')
+            'probeset name must be one of {}!'.format(valid_probe_names))
 
-    save_dir = './rlt_%s_%s' % (probeset_name, your_method_label)
+    if not save_dir:
+        save_dir = './rlt_%s_results' % (probe_name)
     if not osp.exists(save_dir):
         os.makedirs(save_dir)
 
@@ -260,70 +263,101 @@ def plot_megaface_result(your_result_dir, your_method_label,
 
     print 'n_distractors: ', n_distractors
 
-    print '===> Loading data for probset {} from: {}'.format(probeset_name, your_result_dir)
-    # your_result = load_your_result(your_result_dir, probeset_name, feat_ending)
-    your_result = load_result_data(your_result_dir, probeset_name)
-    rocs = your_result['rocs']
-    cmcs = your_result['cmcs']
-    rank_1 = your_result['rank_1']
-    rank_10 = your_result['rank_10']
+    if your_method_dirs is None:
+        your_method_dirs = []
 
-    calc_target_tpr_and_rank(rocs, rank_1, rank_10, save_dir)
+    if your_method_labels is None:
+        your_method_labels = []
+        for it in your_method_dirs:
+            your_method_labels.append(osp.basename(it))
 
-    print '===> Plotting Verification ROC under different #distractors'
-    fig = plt.figure(figsize=(16, 12), dpi=100)
+    your_methods_data = []
 
-    colors = ['g', 'r', 'b', 'c', 'm', 'y']
-    labels = [str(it) for it in n_distractors]
+    n_results = len(your_method_dirs)
+    for j in range(n_results):
+        print '===> Loading data for probset {} from: {}'.format(
+            probe_name, your_method_dirs[j])
 
-    # plt.semilogx(rocs[0][0], rocs[0][1], 'g', label='10')
-    # plt.semilogx(rocs[1][0], rocs[1][1], 'r', label='100')
-    # plt.semilogx(rocs[2][0], rocs[2][1], 'b', label='1000')
-    # plt.semilogx(your_result['roc_10k'][0],
-    #              your_result['roc_10k'][1], 'c', label='10000')
-    # plt.semilogx(rocs[4][0], rocs[4][1], 'm', label='100000')
-    # plt.semilogx(your_result['roc_1M'][0],
-    #              your_result['roc_1M'][1], 'y', label='1000000')
+        # your_result = load_your_result(your_method_dirs, probe_name, feat_ending)
+        your_result = load_result_data(your_method_dirs[j], probe_name)
 
-    for i in range(len(n_distractors)):
-        plt.semilogx(rocs[i][0], rocs[i][1], colors[i], label=labels[i])
+        rocs = your_result['rocs']
+        cmcs = your_result['cmcs']
+        rank_1 = your_result['rank_1']
+        rank_10 = your_result['rank_10']
 
-    plt.xlim([1e-8, 1])
-    plt.ylim([0, 1])
+        your_methods_data.append(your_result)
 
-    plt.grid()
-    plt.legend(loc='lower right')
-    plt.show()
-    fig.savefig(osp.join(save_dir, 'roc_under_diff_distractors.png'),
-                bbox_inches='tight')
+        calc_target_tpr_and_rank(rocs, rank_1, rank_10,
+                                 save_dir, your_method_labels[j])
 
-    print '===> Plotting Identification CMC under different #distractors'
-    fig = plt.figure(figsize=(16, 12), dpi=100)
-    for i in range(len(n_distractors)):
-        plt.semilogx(cmcs[i][0], cmcs[i][1], colors[i], label=labels[i])
+        print '===> Plotting Verification ROC under different #distractors'
+        fig = plt.figure(figsize=(16, 12), dpi=100)
 
-    plt.xlim([1, 1e6])
-    plt.ylim([0, 1])
+        colors = ['g', 'r', 'b', 'c', 'm', 'y']
+        labels = [str(it) for it in n_distractors]
 
-    plt.grid()
-    plt.legend(loc='lower right')
-    plt.show()
-    fig.savefig(osp.join(save_dir, 'cmc_under_diff_distractors.png'),
-                bbox_inches='tight')
+        # plt.semilogx(rocs[0][0], rocs[0][1], 'g', label='10')
+        # plt.semilogx(rocs[1][0], rocs[1][1], 'r', label='100')
+        # plt.semilogx(rocs[2][0], rocs[2][1], 'b', label='1000')
+        # plt.semilogx(your_result['roc_10k'][0],
+        #              your_result['roc_10k'][1], 'c', label='10000')
+        # plt.semilogx(rocs[4][0], rocs[4][1], 'm', label='100000')
+        # plt.semilogx(your_result['roc_1M'][0],
+        #              your_result['roc_1M'][1], 'y', label='1000000')
+
+        for i in range(len(n_distractors)):
+            plt.semilogx(rocs[i][0], rocs[i][1], colors[i], label=labels[i])
+
+        plt.xlim([1e-8, 1])
+        plt.ylim([0, 1])
+
+        plt.grid()
+        plt.legend(loc='lower right')
+        plt.show()
+        save_fn = osp.join(save_dir,
+                           'roc_under_diff_distractors_%s.png' % your_method_labels[j])
+        fig.savefig(save_fn, bbox_inches='tight')
+
+        print '===> Plotting Identification CMC under different #distractors'
+        fig = plt.figure(figsize=(16, 12), dpi=100)
+        for i in range(len(n_distractors)):
+            plt.semilogx(cmcs[i][0], cmcs[i][1], colors[i], label=labels[i])
+
+        plt.xlim([1, 1e6])
+        plt.ylim([0, 1])
+
+        plt.grid()
+        plt.legend(loc='lower right')
+        plt.show()
+        save_fn = osp.join(save_dir, 'cmc_under_diff_distractors_%s.png'
+                           % your_method_labels[j])
+        fig.savefig(save_fn, bbox_inches='tight')
 
     print '===> Load result data for all the other methods'
-    other_method_list = []
-    other_methods_data = []
+    other_methods_list = []
+    other_methods_data = {}
 
     if other_methods_dir:
-        other_method_list = os.listdir(other_methods_dir)
-        for it in other_method_list:
-            if osp.realpath(osp.join(other_methods_dir, it)) is osp.realpath(your_result_dir):
-                print "Remove your_result_dir from other_method_list"
-                other_method_list.remove(it)
-                break
+        other_methods_list = os.listdir(other_methods_dir)
+        print 'other_methods_list before cleaning: ', other_methods_list
 
-    print 'other_method_list: ', other_method_list
+        for it in other_methods_list:
+            if not osp.isdir(osp.join(other_methods_dir, it)):
+                print "Remove flies(not folders) from other_methods_list"
+                other_methods_list.remove(it)
+
+        for it in other_methods_list:
+            if (osp.realpath(osp.join(other_methods_dir, it))
+                    is osp.realpath(your_method_dirs)):
+                print "Remove your_method_dirs from other_methods_list"
+                other_methods_list.remove(it)
+
+    print 'other_methods_list after cleaning: ', other_methods_list
+
+    if not (your_method_dirs or other_methods_list):
+        print '===> No valid methods found, neither yours or others.'
+        pass
 
     # ['3divi',
     #  'deepsense',
@@ -338,35 +372,38 @@ def plot_megaface_result(your_result_dir, your_method_label,
     #  'facenet',
     #  'ShanghaiTech']
 
-    if other_method_list:
+    if other_methods_list:
         other_methods_data = {}
 
-        for method in other_method_list:
+        for method in other_methods_list:
             result_data = load_result_data(
-                os.path.join(other_methods_dir, method), probeset_name)
+                os.path.join(other_methods_dir, method), probe_name)
 
             if result_data is not None:
                 other_methods_data[method] = load_result_data(
-                    os.path.join(other_methods_dir, method), probeset_name)
-        other_method_list = other_methods_data.keys()
+                    os.path.join(other_methods_dir, method), probe_name)
+        other_methods_list = other_methods_data.keys()
 
         if save_tpr_and_rank1_for_others:
-            for name in other_method_list:
+            for name in other_methods_list:
                 calc_target_tpr_and_rank(other_methods_data[name]['rocs'],
                                          other_methods_data[name]['rank_1'],
                                          other_methods_data[name]['rank_10'],
                                          save_dir, name)
 
-    print '===> Plotting ROC under 10K distractors for your method'
+    print '===> Plotting ROC under 10K distractors for your methods'
     fig = plt.figure(figsize=(20, 10), dpi=200)
     ax = plt.subplot(111)
-    ax.semilogx(your_result['roc_10k'][0],
-                your_result['roc_10k'][1], label=your_method_label)
 
-    if other_method_list:
+    for j in range(n_results):
+        ax.semilogx(your_methods_data[j]['roc_10k'][0],
+                    your_methods_data[j]['roc_10k'][1],
+                    label=your_method_labels[j])
+
+    if other_methods_list:
         print '===> Plotting ROC under 10K distractors for all the other methods'
 
-        for name in other_method_list:
+        for name in other_methods_list:
             ax.semilogx(other_methods_data[name]['roc_10k'][0],
                         other_methods_data[name]['roc_10k'][1],
                         label=name,
@@ -389,16 +426,19 @@ def plot_megaface_result(your_result_dir, your_method_label,
     fig.savefig(osp.join(save_dir, 'verification_roc_10K.png'),
                 bbox_inches='tight')
 
-    print '===> Plotting ROC under 1M distractors for your method'
+    print '===> Plotting ROC under 1M distractors for your methods'
     fig = plt.figure(figsize=(20, 10), dpi=200)
     ax = plt.subplot(111)
-    ax.semilogx(your_result['roc_1M'][0],
-                your_result['roc_1M'][1], label=your_method_label)
 
-    if other_method_list:
+    for j in range(n_results):
+        ax.semilogx(your_methods_data[j]['roc_1M'][0],
+                    your_methods_data[j]['roc_1M'][1],
+                    label=your_method_labels[j])
+
+    if other_methods_list:
         print '===> Plotting ROC under 1M distractors for all the other methods'
 
-        for name in other_method_list:
+        for name in other_methods_list:
             ax.semilogx(other_methods_data[name]['roc_1M'][0],
                         other_methods_data[name]['roc_1M'][1],
                         label=name,
@@ -422,16 +462,18 @@ def plot_megaface_result(your_result_dir, your_method_label,
     fig.savefig(osp.join(save_dir, 'verification_roc_1M.png'),
                 bbox_inches='tight')
 
-    print '===> Plotting recall vs rank under 10K distractors for your method'
+    print '===> Plotting recall vs rank under 10K distractors for your methods'
     fig = plt.figure(figsize=(20, 10), dpi=200)
     ax = plt.subplot(111)
-    ax.semilogx(your_result['cmcs'][3][0],
-                your_result['cmcs'][3][1], label=your_method_label)
+    for j in range(n_results):
+        ax.semilogx(your_methods_data[j]['cmcs'][3][0],
+                    your_methods_data[j]['cmcs'][3][1],
+                    label=your_method_labels[j])
 
-    if other_method_list:
+    if other_methods_list:
         print '===> Plotting recall vs rank under 10K distractors for all the other methods'
 
-        for name in other_method_list:
+        for name in other_methods_list:
             ax.semilogx(other_methods_data[name]['cmcs'][3][0],
                         other_methods_data[name]['cmcs'][3][1],
                         label=name,
@@ -454,16 +496,18 @@ def plot_megaface_result(your_result_dir, your_method_label,
     fig.savefig(osp.join(save_dir, 'identification_recall_vs_rank_10K.png'),
                 bbox_inches='tight')
 
-    print '===> Plotting recall vs rank under 1M distractors for your method'
+    print '===> Plotting recall vs rank under 1M distractors for your methods'
     fig = plt.figure(figsize=(20, 10), dpi=200)
     ax = plt.subplot(111)
-    ax.semilogx(your_result['cmcs'][-1][0],
-                your_result['cmcs'][-1][1], label=your_method_label)
+    for j in range(n_results):
+        ax.semilogx(your_methods_data[j]['cmcs'][-1][0],
+                    your_methods_data[j]['cmcs'][-1][1],
+                    label=your_method_labels[j])
 
-    if other_method_list:
+    if other_methods_list:
         print '===> Plotting recall vs rank under 1M distractors for all the other methods'
 
-        for name in other_method_list:
+        for name in other_methods_list:
             ax.semilogx(other_methods_data[name]['cmcs'][-1][0],
                         other_methods_data[name]['cmcs'][-1][1],
                         label=name,
@@ -486,30 +530,17 @@ def plot_megaface_result(your_result_dir, your_method_label,
     fig.savefig(osp.join(save_dir, 'identification_recall_vs_rank_1M.png'),
                 bbox_inches='tight')
 
-    # if other_method_list:
-    #     print '===> Plotting rank_1 vs #distractors for all the other methods'
-    #     fig = plt.figure(figsize=(10, 10), dpi=200)
-    #     dd = [plt.semilogx(n_distractors, other_methods_data[name]['rank_1'],
-    #                     label=name) for name in other_method_list]
-    #     # dd = [plt.semilogx(n_distractors, other_methods_data[name]['rank_1'],
-    #     #                    label=name) for name in other_method_list]
-    #     dd += [plt.semilogx(n_distractors, rank_1, label=your_method_label)]
-    #     plt.xscale('log')
-    #     plt.grid()
-    #     plt.legend()
-    #     plt.show()
-    #     fig.savefig(osp.join(save_dir, 'identification_rank_1_vs_distractors_small.png'),
-    #                 bbox_inches='tight')
-
     print '===> Plotting rank_1 vs #distractors for your method'
     fig = plt.figure(figsize=(20, 10), dpi=100)
     ax = plt.subplot(111)
-    ax.semilogx(n_distractors, rank_1, label=your_method_label)
+    for j in range(n_results):
+        ax.semilogx(n_distractors, your_methods_data[j]['rank_1'],
+                    label=your_method_labels[j])
 
-    if other_method_list:
+    if other_methods_list:
         print '===> Plotting rank_1 vs #distractors for all the other methods'
 
-        for name in other_method_list:
+        for name in other_methods_list:
             ax.semilogx(
                 n_distractors,
                 other_methods_data[name]['rank_1'],
@@ -533,20 +564,28 @@ def plot_megaface_result(your_result_dir, your_method_label,
 
 
 if __name__ == '__main__':
-    your_result_dir = r'C:\zyf\dataset\megaface\Challenge1External\facenet'
-    your_method_label = 'facenet'
+    your_method_dirs = [
+        r'C:\zyf\dataset\megaface\Challenge1External\facenet',
+        r'C:\zyf\dataset\megaface\Challenge1External\SIAT_MMLAB',
+    ]
+    your_method_labels = [
+        'facenet',
+        'SIAT_MMLAB'
+    ]
 
     probesets = ['facescrub', 'fgnet']
     # feat_ending = '_feat'
 
-#    other_methods_dir = None
-    other_methods_dir = r'C:\zyf\dataset\megaface\Challenge1External'
+    other_methods_dir = None
+#    other_methods_dir = r'C:\zyf\dataset\megaface\Challenge1External'
     save_tpr_and_rank1_for_others = False
-    save_tpr_and_rank1_for_others = True
+#    save_tpr_and_rank1_for_others = True
 
-    for probeset_name in probesets:
-        plot_megaface_result(your_result_dir, your_method_label,
-                             probeset_name,
+    for probe_name in probesets:
+        save_dir = './rlt_%s_test_results' % probe_name
+        plot_megaface_result(your_method_dirs, your_method_labels,
+                             probe_name,
+                             save_dir,
                              other_methods_dir,
                              save_tpr_and_rank1_for_others
                              )

@@ -15,8 +15,8 @@ if __name__ == '__main__':
     ]
 
     my_method_labels = [
-        'FaceX-ZYF-1220',
-        'FaceX-ZYF-0128',
+        '1220-MS1M-WX-part',
+        '0128-MS1M-WX-2refine'
     ]
 
     probe = 'idProbe'

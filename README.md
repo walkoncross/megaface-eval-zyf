@@ -13,10 +13,9 @@ Please refer to [MegaFace's Official Page](http://megaface.cs.washington.edu/par
 1. Download the some of the [Challenge 1 json results](http://megaface.cs.washington.edu/Challenge1JSON.zip), and unzip it into devkit/Challenge1External;
 
 1. For plot test, run:
-```
-cd plot_results
-python plot_megaface_results.py
-```
-
+    ```cmd
+    cd plot_results
+    python plot_megaface_results.py
+    ```
 1. To plot your own evaluation results, please change "method_dirs" and "method_labels" to your results's paths in [plot_results/plot_megaface_results.py](plot_results/plot_megaface_results.py), and run the script.
 

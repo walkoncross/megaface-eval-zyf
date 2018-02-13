@@ -1,0 +1,2 @@
+# MegaFace Linux Development Kit 
+Please download Megaface [Linux Development Kit](http://megaface.cs.washington.edu/participate/challenge.html) ([.zip](http://megaface.cs.washington.edu/dataset/download/content/devkit.zip) or [.tar.gz](http://megaface.cs.washington.edu/dataset/download/content/devkit.tar.gz)) and unzip/untar it to this path.

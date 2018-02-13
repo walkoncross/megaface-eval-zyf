@@ -17,5 +17,5 @@ Please refer to [MegaFace's Official Page](http://megaface.cs.washington.edu/par
     cd plot_results
     python plot_megaface_results.py
     ```
-1. To plot your own evaluation results, please change "method_dirs" and "method_labels" to your results's paths in [plot_results/plot_megaface_results.py](plot_results/plot_megaface_results.py), and run the script.
+1. To plot your own evaluation results, please change "method_dirs" to your results's paths and set corresponding "method_labels" in [plot_results/plot_megaface_results.py](plot_results/plot_megaface_results.py), and run the script.
 

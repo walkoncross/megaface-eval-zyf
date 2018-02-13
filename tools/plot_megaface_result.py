@@ -340,20 +340,25 @@ def plot_megaface_result(your_method_dirs, your_method_labels,
 
     if other_methods_dir:
         other_methods_list = os.listdir(other_methods_dir)
-        print 'other_methods_list before cleaning: ', other_methods_list
+        print '===> other_methods_list before cleaning: ', other_methods_list
 
         for it in other_methods_list:
             if not osp.isdir(osp.join(other_methods_dir, it)):
                 print "Remove flies(not folders) from other_methods_list"
                 other_methods_list.remove(it)
 
-        for it in other_methods_list:
-            if (osp.realpath(osp.join(other_methods_dir, it))
-                    is osp.realpath(your_method_dirs)):
-                print "Remove your_method_dirs from other_methods_list"
-                other_methods_list.remove(it)
+        for dd in your_method_dirs:
+            dd_dir, dd_base = osp.split(osp.realpath(dd))
+#            print '---> dd_dir, dd_base: ', dd_dir, dd_base
+#            print osp.realpath(other_methods_dir)
+            if  dd_dir and dd_dir == osp.realpath(other_methods_dir):
+                for it in other_methods_list:
+#                    print it
+                    if dd_base == it:
+                        print "Remove your_method_dirs from other_methods_list"
+                        other_methods_list.remove(it)
 
-    print 'other_methods_list after cleaning: ', other_methods_list
+    print '===> other_methods_list after cleaning: ', other_methods_list
 
     if not (your_method_dirs or other_methods_list):
         print '===> No valid methods found, neither yours or others.'
@@ -573,11 +578,12 @@ if __name__ == '__main__':
         'SIAT_MMLAB'
     ]
 
-    probesets = ['facescrub', 'fgnet']
+    probesets = ['facescrub']
+#    probesets = ['facescrub', 'fgnet']
     # feat_ending = '_feat'
 
-    other_methods_dir = None
-#    other_methods_dir = r'C:\zyf\dataset\megaface\Challenge1External'
+#    other_methods_dir = None
+    other_methods_dir = r'C:\zyf\dataset\megaface\Challenge1External'
     save_tpr_and_rank1_for_others = False
 #    save_tpr_and_rank1_for_others = True
 

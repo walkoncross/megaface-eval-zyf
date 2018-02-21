@@ -122,16 +122,18 @@ def load_result_data(folder, probe_name):
         target_recall = interp_target_rank_recall(cmcs[i], 10)
         rank_10.append(target_recall)
 
-    roc_10K = cmc_dict[10000]['roc']
-    roc_1M = cmc_dict[1000000]['roc']
+    # roc_10K = cmc_dict[10000]['roc']
+    # roc_100K = cmc_dict[100000]['roc']
+    # roc_1M = cmc_dict[1000000]['roc']
 
     return {
         'rocs': rocs,
         'cmcs': cmcs,
         'rank_1': rank_1,
-        'rank_10': rank_10,
-        'roc_10k': roc_10K,
-        'roc_1M': roc_1M
+        'rank_10': rank_10
+        # 'roc_10k': roc_10K,
+        # 'roc_100k': roc_100K,
+        # 'roc_1M': roc_1M
     }
 
 
@@ -396,144 +398,77 @@ def plot_megaface_result(your_method_dirs, your_method_labels,
                                          other_methods_data[name]['rank_10'],
                                          save_dir, name)
 
-    print '===> Plotting ROC under 10K distractors for your methods'
-    fig = plt.figure(figsize=(20, 10), dpi=200)
-    ax = plt.subplot(111)
+    plot_names = ['10k', '100k', '1M']
 
-    for j in range(n_results):
-        ax.semilogx(your_methods_data[j]['roc_10k'][0],
-                    your_methods_data[j]['roc_10k'][1],
-                    label=your_method_labels[j])
+    for i, pn in enumerate(plot_names):
+        print '===> Plotting ROC under %s distractors for your methods' % pn
+        fig = plt.figure(figsize=(20, 10), dpi=200)
+        ax = plt.subplot(111)
 
-    if other_methods_list:
-        print '===> Plotting ROC under 10K distractors for all the other methods'
+        for j in range(n_results):
+            ax.semilogx(your_methods_data[j]['rocs'][i+3][0],
+                        your_methods_data[j]['rocs'][i+3][1],
+                        label=your_method_labels[j])
 
-        for name in other_methods_list:
-            ax.semilogx(other_methods_data[name]['roc_10k'][0],
-                        other_methods_data[name]['roc_10k'][1],
-                        label=name,
-                        c=np.random.rand(3))
+        if other_methods_list:
+            print '===> Plotting ROC under %s distractors for all the other methods' % pn
 
-    # Shrink current axis by 20%
-    box = ax.get_position()
-    ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
-    ax.set_xlim([1e-6, 1])
-    ax.set_ylim([0, 1])
-    ax.set_xlabel('False Positive Rate')
-    ax.set_ylabel('True Positive Rate')
+            for name in other_methods_list:
+                ax.semilogx(other_methods_data[name]['rocs'][i+3][0],
+                            other_methods_data[name]['rocs'][i+3][1],
+                            label=name,
+                            c=np.random.rand(3))
 
-    # Put a legend to the right of the current axis
-    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-    plt.rcParams['figure.figsize'] = (10.0, 8.0)  # set default size of plots
-    plt.grid()
-#    plt.legend()
-    plt.show()
-    fig.savefig(osp.join(save_dir, 'verification_roc_10K.png'),
-                bbox_inches='tight')
+        # Shrink current axis by 20%
+        box = ax.get_position()
+        ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+        ax.set_xlim([1e-6, 1])
+        ax.set_ylim([0, 1])
+        ax.set_xlabel('False Positive Rate')
+        ax.set_ylabel('True Positive Rate')
 
-    print '===> Plotting ROC under 1M distractors for your methods'
-    fig = plt.figure(figsize=(20, 10), dpi=200)
-    ax = plt.subplot(111)
+        # Put a legend to the right of the current axis
+        ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+        plt.rcParams['figure.figsize'] = (10.0, 8.0)  # set default size of plots
+        plt.grid()
+    #    plt.legend()
+        plt.show()
+        fig.savefig(osp.join(save_dir, 'verification_roc_%s.png' % pn),
+                    bbox_inches='tight')
 
-    for j in range(n_results):
-        ax.semilogx(your_methods_data[j]['roc_1M'][0],
-                    your_methods_data[j]['roc_1M'][1],
-                    label=your_method_labels[j])
+        print '===> Plotting recall vs rank under %s distractors for your methods' % pn
+        fig = plt.figure(figsize=(20, 10), dpi=200)
+        ax = plt.subplot(111)
+        for j in range(n_results):
+            ax.semilogx(your_methods_data[j]['cmcs'][i+3][0],
+                        your_methods_data[j]['cmcs'][i+3][1],
+                        label=your_method_labels[j])
 
-    if other_methods_list:
-        print '===> Plotting ROC under 1M distractors for all the other methods'
+        if other_methods_list:
+            print '===> Plotting recall vs rank under %s distractors for all the other methods' % pn
 
-        for name in other_methods_list:
-            ax.semilogx(other_methods_data[name]['roc_1M'][0],
-                        other_methods_data[name]['roc_1M'][1],
-                        label=name,
-                        c=np.random.rand(3))
+            for name in other_methods_list:
+                ax.semilogx(other_methods_data[name]['cmcs'][i+3][0],
+                            other_methods_data[name]['cmcs'][i+3][1],
+                            label=name,
+                            c=np.random.rand(3))
 
-    # Shrink current axis by 20%
-    box = ax.get_position()
-    ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
-    ax.set_xlim([1e-6, 1])
-    ax.set_ylim([0, 1])
+        # Shrink current axis by 20%
+        box = ax.get_position()
+        ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+        ax.set_xlim([1, 1e4])
+        ax.set_ylim([0, 1])
+        ax.set_xlabel('Rank')
+        ax.set_ylabel('Identification Rate (Recall)')
 
-    ax.set_xlabel('False Positive Rate')
-    ax.set_ylabel('True Positive Rate')
-
-    # Put a legend to the right of the current axis
-    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-    plt.rcParams['figure.figsize'] = (10.0, 8.0)  # set default size of plots
-    plt.grid()
-#    plt.legend()
-    plt.show()
-    fig.savefig(osp.join(save_dir, 'verification_roc_1M.png'),
-                bbox_inches='tight')
-
-    print '===> Plotting recall vs rank under 10K distractors for your methods'
-    fig = plt.figure(figsize=(20, 10), dpi=200)
-    ax = plt.subplot(111)
-    for j in range(n_results):
-        ax.semilogx(your_methods_data[j]['cmcs'][3][0],
-                    your_methods_data[j]['cmcs'][3][1],
-                    label=your_method_labels[j])
-
-    if other_methods_list:
-        print '===> Plotting recall vs rank under 10K distractors for all the other methods'
-
-        for name in other_methods_list:
-            ax.semilogx(other_methods_data[name]['cmcs'][3][0],
-                        other_methods_data[name]['cmcs'][3][1],
-                        label=name,
-                        c=np.random.rand(3))
-
-    # Shrink current axis by 20%
-    box = ax.get_position()
-    ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
-    ax.set_xlim([1, 1e4])
-    ax.set_ylim([0, 1])
-    ax.set_xlabel('Rank')
-    ax.set_ylabel('Identification Rate (Recall)')
-
-    # Put a legend to the right of the current axis
-    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-    plt.rcParams['figure.figsize'] = (10.0, 8.0)  # set default size of plots
-    plt.grid()
-#    plt.legend()
-    plt.show()
-    fig.savefig(osp.join(save_dir, 'identification_recall_vs_rank_10K.png'),
-                bbox_inches='tight')
-
-    print '===> Plotting recall vs rank under 1M distractors for your methods'
-    fig = plt.figure(figsize=(20, 10), dpi=200)
-    ax = plt.subplot(111)
-    for j in range(n_results):
-        ax.semilogx(your_methods_data[j]['cmcs'][-1][0],
-                    your_methods_data[j]['cmcs'][-1][1],
-                    label=your_method_labels[j])
-
-    if other_methods_list:
-        print '===> Plotting recall vs rank under 1M distractors for all the other methods'
-
-        for name in other_methods_list:
-            ax.semilogx(other_methods_data[name]['cmcs'][-1][0],
-                        other_methods_data[name]['cmcs'][-1][1],
-                        label=name,
-                        c=np.random.rand(3))
-
-    # Shrink current axis by 20%
-    box = ax.get_position()
-    ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
-    ax.set_xlim([1, 1e6])
-    ax.set_ylim([0, 1])
-    ax.set_xlabel('Rank')
-    ax.set_ylabel('Identification Rate (Recall)')
-
-    # Put a legend to the right of the current axis
-    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-    plt.rcParams['figure.figsize'] = (10.0, 8.0)  # set default size of plots
-    plt.grid()
-#    plt.legend()
-    plt.show()
-    fig.savefig(osp.join(save_dir, 'identification_recall_vs_rank_1M.png'),
-                bbox_inches='tight')
+        # Put a legend to the right of the current axis
+        ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+        plt.rcParams['figure.figsize'] = (10.0, 8.0)  # set default size of plots
+        plt.grid()
+    #    plt.legend()
+        plt.show()
+        fig.savefig(osp.join(save_dir, 'identification_recall_vs_rank_%s.png' % pn),
+                    bbox_inches='tight')
 
     print '===> Plotting rank_1 vs #distractors for your method'
     fig = plt.figure(figsize=(20, 10), dpi=100)

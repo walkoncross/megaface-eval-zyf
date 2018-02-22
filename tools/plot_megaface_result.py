@@ -16,6 +16,7 @@ import matplotlib
 matplotlib.use('agg')
 
 import matplotlib.pyplot as plt
+from matplotlib.ticker import AutoMinorLocator
 
 from interpolation import linear_interp, nearest_neighbor_interp
 
@@ -27,6 +28,34 @@ def generate_n_distractors():
 
 
 n_distractors = generate_n_distractors()
+
+
+def generate_plot_colors():
+    _colors = ['w', 'b', 'g', 'r', 'c', 'm', 'y', 'k']
+
+    rgb_colors_list = []
+
+    # 9 basic colors
+    for it in _colors:
+        rgb_colors_list.append(matplotlib.colors.to_rgb(it))
+
+    # add other colors not in the 9 basic colors
+    for r in (0, 0.5, 1.0):
+        for g in (0, 0.5, 1.0):
+            for b in (0, 0.5, 1.0):
+                rgb = (r, g, b)
+                if rgb not in rgb_colors_list:
+                    rgb_colors_list.append(rgb)
+
+    # remove white color
+    rgb_colors_list.remove((1.0, 1.0, 1.0))
+    print('===> {} colors generated without "white" color'.format(
+        len(rgb_colors_list)))
+
+    return rgb_colors_list
+
+
+colors = generate_plot_colors()
 
 
 def interp_target_tpr(roc, target_fpr):
@@ -249,7 +278,8 @@ def plot_megaface_result(your_method_dirs, your_method_labels,
                          probe_name,
                          save_dir=None,
                          other_methods_dir=None,
-                         save_tpr_and_rank1_for_others=False):
+                         save_tpr_and_rank1_for_others=False,
+                         ymin=0, minor_ticks=0):
     probe_name = probe_name.lower()
     valid_probe_names = ['facescrub', 'fgnet', 'idprobe']
     if not probe_name in valid_probe_names:
@@ -296,7 +326,6 @@ def plot_megaface_result(your_method_dirs, your_method_labels,
         print '===> Plotting Verification ROC under different #distractors'
         fig = plt.figure(figsize=(16, 12), dpi=100)
 
-        colors = ['g', 'r', 'b', 'c', 'm', 'y']
         labels = [str(it) for it in n_distractors]
 
         # plt.semilogx(rocs[0][0], rocs[0][1], 'g', label='10')
@@ -308,13 +337,31 @@ def plot_megaface_result(your_method_dirs, your_method_labels,
         # plt.semilogx(your_result['roc_1M'][0],
         #              your_result['roc_1M'][1], 'y', label='1000000')
 
+        color_idx = 0
         for i in range(len(n_distractors)):
-            plt.semilogx(rocs[i][0], rocs[i][1], colors[i], label=labels[i])
+            if color_idx < len(colors):
+                _color = colors[color_idx]
+            else:
+                _color = np.random.rand(3)
+
+            plt.semilogx(rocs[i][0], rocs[i][1], c=_color, label=labels[i])
+            color_idx += 1
 
         plt.xlim([1e-8, 1])
-        plt.ylim([0, 1])
+        plt.ylim([ymin, 1])
 
-        plt.grid()
+        plt.grid(True, which='major', lw=2)
+
+        if minor_ticks > 0:
+            ax = plt.gca()
+            # minorLocator = AutoMinorLocator(minor_ticks)
+            # ax.xaxis.set_minor_locator(minorLocator)
+            minorLocator = AutoMinorLocator(minor_ticks)
+            ax.yaxis.set_minor_locator(minorLocator)
+            plt.grid(True, which='minor', ls='--')
+
+        # plt.grid(True, which='both')
+
         plt.legend(loc='lower right')
         plt.show()
         save_fn = osp.join(save_dir,
@@ -323,13 +370,32 @@ def plot_megaface_result(your_method_dirs, your_method_labels,
 
         print '===> Plotting Identification CMC under different #distractors'
         fig = plt.figure(figsize=(16, 12), dpi=100)
+
+        color_idx = 0
         for i in range(len(n_distractors)):
-            plt.semilogx(cmcs[i][0], cmcs[i][1], colors[i], label=labels[i])
+            if color_idx < len(colors):
+                _color = colors[color_idx]
+            else:
+                _color = np.random.rand(3)
+
+            plt.semilogx(cmcs[i][0], cmcs[i][1], c=_color, label=labels[i])
+            color_idx += 1
 
         plt.xlim([1, 1e6])
-        plt.ylim([0, 1])
+        plt.ylim([ymin, 1])
 
-        plt.grid()
+        plt.grid(True, which='major', lw=2)
+
+        if minor_ticks > 0:
+            ax = plt.gca()
+            # minorLocator = AutoMinorLocator(minor_ticks)
+            # ax.xaxis.set_minor_locator(minorLocator)
+            minorLocator = AutoMinorLocator(minor_ticks)
+            ax.yaxis.set_minor_locator(minorLocator)
+            plt.grid(True, which='minor', ls='--')
+
+        # plt.grid(True, which='both')
+
         plt.legend(loc='lower right')
         plt.show()
         save_fn = osp.join(save_dir, 'cmc_under_diff_distractors_%s.png'
@@ -353,9 +419,9 @@ def plot_megaface_result(your_method_dirs, your_method_labels,
             dd_dir, dd_base = osp.split(osp.realpath(dd))
 #            print '---> dd_dir, dd_base: ', dd_dir, dd_base
 #            print osp.realpath(other_methods_dir)
-            if  dd_dir and dd_dir == osp.realpath(other_methods_dir):
+            if dd_dir and dd_dir == osp.realpath(other_methods_dir):
                 for it in other_methods_list:
-#                    print it
+                    #                    print it
                     if dd_base == it:
                         print "Remove your_method_dirs from other_methods_list"
                         other_methods_list.remove(it)
@@ -405,32 +471,59 @@ def plot_megaface_result(your_method_dirs, your_method_labels,
         fig = plt.figure(figsize=(20, 10), dpi=200)
         ax = plt.subplot(111)
 
+        color_idx = 0
+
         for j in range(n_results):
-            ax.semilogx(your_methods_data[j]['rocs'][i+3][0],
-                        your_methods_data[j]['rocs'][i+3][1],
-                        label=your_method_labels[j])
+            if color_idx < len(colors):
+                _color = colors[color_idx]
+            else:
+                _color = np.random.rand(3)
+
+            ax.semilogx(your_methods_data[j]['rocs'][i + 3][0],
+                        your_methods_data[j]['rocs'][i + 3][1],
+                        label=your_method_labels[j],
+                        c=_color)
+            color_idx += 1
 
         if other_methods_list:
             print '===> Plotting ROC under %s distractors for all the other methods' % pn
 
             for name in other_methods_list:
-                ax.semilogx(other_methods_data[name]['rocs'][i+3][0],
-                            other_methods_data[name]['rocs'][i+3][1],
+                if color_idx < len(colors):
+                    _color = colors[color_idx]
+                else:
+                    _color = np.random.rand(3)
+
+                ax.semilogx(other_methods_data[name]['rocs'][i + 3][0],
+                            other_methods_data[name]['rocs'][i + 3][1],
                             label=name,
-                            c=np.random.rand(3))
+                            c=_color)
+                color_idx += 1
 
         # Shrink current axis by 20%
         box = ax.get_position()
         ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
         ax.set_xlim([1e-6, 1])
-        ax.set_ylim([0, 1])
+        ax.set_ylim([ymin, 1])
         ax.set_xlabel('False Positive Rate')
         ax.set_ylabel('True Positive Rate')
 
         # Put a legend to the right of the current axis
         ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-        plt.rcParams['figure.figsize'] = (10.0, 8.0)  # set default size of plots
-        plt.grid()
+        plt.rcParams['figure.figsize'] = (
+            10.0, 8.0)  # set default size of plots
+
+        plt.grid(True, which='major', lw=2)
+
+        if minor_ticks > 0:
+            # ax = plt.gca()
+            # minorLocator = AutoMinorLocator(minor_ticks)
+            # ax.xaxis.set_minor_locator(minorLocator)
+            minorLocator = AutoMinorLocator(minor_ticks)
+            ax.yaxis.set_minor_locator(minorLocator)
+            plt.grid(True, which='minor', ls='--')
+
+        # plt.grid(True, which='both')
     #    plt.legend()
         plt.show()
         fig.savefig(osp.join(save_dir, 'verification_roc_%s.png' % pn),
@@ -439,17 +532,26 @@ def plot_megaface_result(your_method_dirs, your_method_labels,
         print '===> Plotting recall vs rank under %s distractors for your methods' % pn
         fig = plt.figure(figsize=(20, 10), dpi=200)
         ax = plt.subplot(111)
+        color_idx = 0
+
         for j in range(n_results):
-            ax.semilogx(your_methods_data[j]['cmcs'][i+3][0],
-                        your_methods_data[j]['cmcs'][i+3][1],
-                        label=your_method_labels[j])
+            if color_idx < len(colors):
+                _color = colors[color_idx]
+            else:
+                _color = np.random.rand(3)
+
+            ax.semilogx(your_methods_data[j]['cmcs'][i + 3][0],
+                        your_methods_data[j]['cmcs'][i + 3][1],
+                        label=your_method_labels[j],
+                        c=_color)
+            color_idx += 1
 
         if other_methods_list:
             print '===> Plotting recall vs rank under %s distractors for all the other methods' % pn
 
             for name in other_methods_list:
-                ax.semilogx(other_methods_data[name]['cmcs'][i+3][0],
-                            other_methods_data[name]['cmcs'][i+3][1],
+                ax.semilogx(other_methods_data[name]['cmcs'][i + 3][0],
+                            other_methods_data[name]['cmcs'][i + 3][1],
                             label=name,
                             c=np.random.rand(3))
 
@@ -457,14 +559,27 @@ def plot_megaface_result(your_method_dirs, your_method_labels,
         box = ax.get_position()
         ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
         ax.set_xlim([1, 1e4])
-        ax.set_ylim([0, 1])
+        ax.set_ylim([ymin, 1])
         ax.set_xlabel('Rank')
         ax.set_ylabel('Identification Rate (Recall)')
 
         # Put a legend to the right of the current axis
         ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-        plt.rcParams['figure.figsize'] = (10.0, 8.0)  # set default size of plots
-        plt.grid()
+        plt.rcParams['figure.figsize'] = (
+            10.0, 8.0)  # set default size of plots
+
+        plt.grid(True, which='major', lw=2)
+
+        if minor_ticks > 0:
+            # ax = plt.gca()
+            # minorLocator = AutoMinorLocator(minor_ticks)
+            # ax.xaxis.set_minor_locator(minorLocator)
+            minorLocator = AutoMinorLocator(minor_ticks)
+            ax.yaxis.set_minor_locator(minorLocator)
+            plt.grid(True, which='minor', ls='--')
+
+        # plt.grid(True, which='both')
+
     #    plt.legend()
         plt.show()
         fig.savefig(osp.join(save_dir, 'identification_recall_vs_rank_%s.png' % pn),
@@ -473,19 +588,33 @@ def plot_megaface_result(your_method_dirs, your_method_labels,
     print '===> Plotting rank_1 vs #distractors for your method'
     fig = plt.figure(figsize=(20, 10), dpi=100)
     ax = plt.subplot(111)
+
+    color_idx = 0
     for j in range(n_results):
+        if color_idx < len(colors):
+            _color = colors[color_idx]
+        else:
+            _color = np.random.rand(3)
+
         ax.semilogx(n_distractors, your_methods_data[j]['rank_1'],
-                    label=your_method_labels[j])
+                    label=your_method_labels[j],
+                    c=_color)
+        color_idx += 1
 
     if other_methods_list:
         print '===> Plotting rank_1 vs #distractors for all the other methods'
 
         for name in other_methods_list:
+            if color_idx < len(colors):
+                _color = colors[color_idx]
+            else:
+                _color = np.random.rand(3)
             ax.semilogx(
                 n_distractors,
                 other_methods_data[name]['rank_1'],
                 label=name,
-                c=np.random.rand(3))
+                c=_color)
+            color_idx += 1
 
     # Shrink current axis by 20%
     box = ax.get_position()
@@ -493,10 +622,25 @@ def plot_megaface_result(your_method_dirs, your_method_labels,
     ax.set_xlabel('# distractors (logscale)')
     ax.set_ylabel('Identification rate')
 
+    ax.set_xlim([10, 1e6])
+    ax.set_ylim([ymin, 1])
+
     # Put a legend to the right of the current axis
     ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     plt.rcParams['figure.figsize'] = (10.0, 8.0)  # set default size of plots
-    plt.grid()
+
+    plt.grid(True, which='major', lw=2)
+
+    if minor_ticks > 0:
+        # ax = plt.gca()
+        # minorLocator = AutoMinorLocator(minor_ticks)
+        # ax.xaxis.set_minor_locator(minorLocator)
+        minorLocator = AutoMinorLocator(minor_ticks)
+        ax.yaxis.set_minor_locator(minorLocator)
+        plt.grid(True, which='minor', ls='--')
+
+    # plt.grid(True, which='both')
+
 #    plt.legend()
     plt.show()
     fig.savefig(osp.join(save_dir, 'identification_rank_1_vs_distractors.png'),
@@ -513,8 +657,8 @@ if __name__ == '__main__':
         'SIAT_MMLAB'
     ]
 
-    probesets = ['facescrub']
-#    probesets = ['facescrub', 'fgnet']
+#    probesets = ['facescrub']
+    probesets = ['facescrub', 'fgnet']
     # feat_ending = '_feat'
 
 #    other_methods_dir = None
@@ -522,11 +666,15 @@ if __name__ == '__main__':
     save_tpr_and_rank1_for_others = False
 #    save_tpr_and_rank1_for_others = True
 
+    y_min = 0
+    minor_ticks = 5
+
     for probe_name in probesets:
         save_dir = './rlt_%s_test_results' % probe_name
         plot_megaface_result(your_method_dirs, your_method_labels,
                              probe_name,
                              save_dir,
                              other_methods_dir,
-                             save_tpr_and_rank1_for_others
+                             save_tpr_and_rank1_for_others,
+                             y_min, minor_ticks
                              )

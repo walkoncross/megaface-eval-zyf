@@ -279,7 +279,7 @@ def plot_megaface_result(your_method_dirs, your_method_labels,
                          save_dir=None,
                          other_methods_dir=None,
                          save_tpr_and_rank1_for_others=False,
-                         ymin=0, minor_ticks=0):
+                         ymin=0, minor_ticks=5):
     probe_name = probe_name.lower()
     valid_probe_names = ['facescrub', 'fgnet', 'idprobe']
     if not probe_name in valid_probe_names:

@@ -219,9 +219,12 @@ def load_result_data(folder, probe_name):
 #             }
 
 
-def calc_target_tpr_and_rank(rocs, rank_1, rank_10, save_dir, method_label=None):
-    print '===> Calc and save TPR@FPR=1e-6 for method: ', method_label
-    target_fpr = 1e-6
+def calc_target_tpr_and_rank(rocs, rank_1, rank_10, save_dir,
+                             method_label=None, target_fpr=1e-6,
+                             fp_tpr_sum=None, fp_rank_sum=None):
+
+    print('===> Calc and save TPR@FPR={:g} for method: {}'.format(
+        target_fpr, method_label))
     fn_tpr = osp.join(save_dir, 'TPRs-at-FPR_%g' % target_fpr)
     fn_rank = osp.join(save_dir, 'rank_vs_distractors')
 
@@ -236,20 +239,37 @@ def calc_target_tpr_and_rank(rocs, rank_1, rank_10, save_dir, method_label=None)
 
     fp_tpr = open(fn_tpr, 'w')
 
+    write_string_sum = ''
+    if fp_tpr_sum:
+        write_string_sum += '{:32}'.format(method_label)
+
     write_string = 'TPR@FPR=%g at different #distractors\n' % target_fpr
     write_string += '#distractors  TPR\n'
     print write_string
     fp_tpr.write(write_string)
+
     for i, roc in enumerate(rocs):
         target_tpr = interp_target_tpr(roc, target_fpr)
         write_string = '%7d %5.4f\n' % (n_distractors[i], target_tpr)
         print write_string
         fp_tpr.write(write_string)
 
+        if fp_tpr_sum:
+            write_string_sum += "\t{:<7.4f}".format(target_tpr)
+
+    if fp_tpr_sum:
+        fp_tpr_sum.write(write_string_sum + '\n')
+        fp_tpr_sum.flush()
+
     fp_tpr.close()
 
     print '===> Save Rank_1 under different #distractors for method: ', method_label
     fp_rank = open(fn_rank, 'w')
+
+    write_string_sum = ''
+    if fp_rank_sum:
+        write_string_sum += '{:32}'.format(method_label)
+
     write_string = 'Rank_1 recall at different #distractors\n'
     write_string += '#distractors  recall\n'
     print write_string
@@ -259,6 +279,8 @@ def calc_target_tpr_and_rank(rocs, rank_1, rank_10, save_dir, method_label=None)
         write_string = '%7d  %5.4f\n' % (n_distractors[i], rank)
         print write_string
         fp_rank.write(write_string)
+        if fp_rank_sum:
+            write_string_sum += "\t{:<14.4f}".format(rank)
 
     write_string = '\nRank_10 recall at different #distractors\n'
     write_string += '#distractors  recall\n'
@@ -269,6 +291,12 @@ def calc_target_tpr_and_rank(rocs, rank_1, rank_10, save_dir, method_label=None)
         write_string = '%7d  %5.4f\n' % (n_distractors[i], rank)
         print write_string
         fp_rank.write(write_string)
+        if fp_rank_sum:
+            write_string_sum += "\t{:<14.4f}".format(rank)
+
+    if fp_rank_sum:
+        fp_rank_sum.write(write_string_sum + '\n')
+        fp_rank_sum.flush()
 
     fp_rank.close()
 
@@ -279,7 +307,8 @@ def plot_megaface_result(your_method_dirs, your_method_labels,
                          save_dir=None,
                          other_methods_dir=None,
                          save_tpr_and_rank1_for_others=False,
-                         ymin=0, minor_ticks=5):
+                         ymin=0, minor_ticks=5,
+                         target_fpr=1e-6):
     probe_name = probe_name.lower()
     valid_probe_names = ['facescrub', 'fgnet', 'idprobe']
     if not probe_name in valid_probe_names:
@@ -305,6 +334,32 @@ def plot_megaface_result(your_method_dirs, your_method_labels,
 
     your_methods_data = []
 
+    fn_tpr_sum = osp.join(save_dir, 'TPRs-at-FPR_%g_summary_all.txt' % target_fpr)
+    fn_rank_sum = osp.join(save_dir, 'rank_vs_distractors_summary_all.txt')
+
+    fp_tpr_sum = open(fn_tpr_sum, 'w')
+    fp_rank_sum = open(fn_rank_sum, 'w')
+
+    # write table head for TPR summary
+    write_string = 'TPR@FPR={:g} at different #distractors\n\n'.format(target_fpr)
+    fp_tpr_sum.write(write_string)
+    write_string = '{:32}'.format('method')
+    for it in n_distractors:
+        write_string += '\t{:<7d}'.format(it)
+    write_string += '\n'
+    fp_tpr_sum.write(write_string)
+
+    # write table head for Rank summary
+    write_string = 'Rank-1 and Rank-10 at different #distractors\n\n'
+    fp_rank_sum.write(write_string)
+    write_string = '{:32}'.format('method')
+    for it in n_distractors:
+        write_string += '\trank1@{:<8d}'.format(it)
+    for it in n_distractors:
+        write_string += '\trank10@{:<7d}'.format(it)
+    write_string += '\n'
+    fp_rank_sum.write(write_string)
+
     n_results = len(your_method_dirs)
     for j in range(n_results):
         print '===> Loading data for probset {} from: {}'.format(
@@ -321,7 +376,9 @@ def plot_megaface_result(your_method_dirs, your_method_labels,
         your_methods_data.append(your_result)
 
         calc_target_tpr_and_rank(rocs, rank_1, rank_10,
-                                 save_dir, your_method_labels[j])
+                                 save_dir, your_method_labels[j],
+                                 fp_tpr_sum=fp_tpr_sum,
+                                 fp_rank_sum=fp_rank_sum)
 
         print '===> Plotting Verification ROC under different #distractors'
         fig = plt.figure(figsize=(16, 12), dpi=100)
@@ -462,7 +519,9 @@ def plot_megaface_result(your_method_dirs, your_method_labels,
                 calc_target_tpr_and_rank(other_methods_data[name]['rocs'],
                                          other_methods_data[name]['rank_1'],
                                          other_methods_data[name]['rank_10'],
-                                         save_dir, name)
+                                         save_dir, name,
+                                         fp_tpr_sum=fp_tpr_sum,
+                                         fp_rank_sum=fp_rank_sum)
 
     plot_names = ['10k', '100k', '1M']
 
@@ -645,6 +704,9 @@ def plot_megaface_result(your_method_dirs, your_method_labels,
     plt.show()
     fig.savefig(osp.join(save_dir, 'identification_rank_1_vs_distractors.png'),
                 bbox_inches='tight')
+
+    fp_tpr_sum.close()
+    fp_rank_sum.close()
 
 
 if __name__ == '__main__':

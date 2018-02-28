@@ -119,7 +119,7 @@ def load_result_data(folder, probe_name):
     all_files = os.listdir(folder)
 #    print 'all_files: ', all_files
     cmc_files = sorted(
-        [a for a in all_files if fnmatch(a, 'cmc*%s*_1.json' % probe_name)])[::-1]
+        [a for a in all_files if fnmatch(a.lower(), 'cmc*%s*_1.json' % probe_name.lower())])[::-1]
 #    print 'cmc_files: ', cmc_files
 
     if not cmc_files:

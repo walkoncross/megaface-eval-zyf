@@ -158,8 +158,8 @@ def load_result_data(folder, probe_name):
     return {
         'rocs': rocs,
         'cmcs': cmcs,
-        'Rank-N_1': rank_1,
-        'Rank-N_10': rank_10
+        'Rank_1': rank_1,
+        'Rank_10': rank_10
         # 'roc_10k': roc_10K,
         # 'roc_100k': roc_100K,
         # 'roc_1M': roc_1M
@@ -212,7 +212,7 @@ def load_result_data(folder, probe_name):
 #     # print cmc_dict[1000000]['cmc'][1][0]
 #     # print cmc_dict[10]['roc']
 
-#     return {'Rank-N_1': rank_1,
+#     return {'Rank_1': rank_1,
 #             'rocs': rocs,
 #             'roc_10k': roc_10K,
 #             'roc_1M': roc_1M
@@ -226,7 +226,7 @@ def calc_target_tpr_and_rank(rocs, rank_1, rank_10, save_dir,
     print('===> Calc and save TPR@FPR={:g} for method: {}'.format(
         target_fpr, method_label))
     fn_tpr = osp.join(save_dir, 'TPRs-at-FPR_%g' % target_fpr)
-    fn_rank = osp.join(save_dir, 'Rank-N_vs_distractors')
+    fn_rank = osp.join(save_dir, 'Rank_vs_distractors')
 
     if method_label:
         fn_tpr += '_' + method_label
@@ -270,7 +270,7 @@ def calc_target_tpr_and_rank(rocs, rank_1, rank_10, save_dir,
     if fp_rank_sum:
         write_string_sum += '{:32}'.format(method_label)
 
-    write_string = 'Rank-N_1 recall at different #distractors\n'
+    write_string = 'Rank_1 recall at different #distractors\n'
     write_string += '#distractors  recall\n'
     print write_string
     fp_rank.write(write_string)
@@ -335,7 +335,7 @@ def plot_megaface_result(your_method_dirs, your_method_labels,
     your_methods_data = []
 
     fn_tpr_sum = osp.join(save_dir, 'TPRs-at-FPR_%g_summary_all.txt' % target_fpr)
-    fn_rank_sum = osp.join(save_dir, 'Rank-N_vs_distractors_summary_all.txt')
+    fn_rank_sum = osp.join(save_dir, 'Rank_vs_distractors_summary_all.txt')
 
     fp_tpr_sum = open(fn_tpr_sum, 'w')
     fp_rank_sum = open(fn_rank_sum, 'w')
@@ -350,7 +350,7 @@ def plot_megaface_result(your_method_dirs, your_method_labels,
     fp_tpr_sum.write(write_string)
 
     # write table head for Rank summary
-    write_string = 'Rank-N-1 and Rank-10 at different #distractors\n\n'
+    write_string = 'Rank-1 and Rank-10 at different #distractors\n\n'
     fp_rank_sum.write(write_string)
     write_string = '{:32}'.format('method')
     for it in n_distractors:
@@ -370,8 +370,8 @@ def plot_megaface_result(your_method_dirs, your_method_labels,
 
         rocs = your_result['rocs']
         cmcs = your_result['cmcs']
-        rank_1 = your_result['Rank-N_1']
-        rank_10 = your_result['Rank-N_10']
+        rank_1 = your_result['Rank_1']
+        rank_10 = your_result['Rank_10']
 
         your_methods_data.append(your_result)
 
@@ -523,8 +523,8 @@ def plot_megaface_result(your_method_dirs, your_method_labels,
         if save_tpr_and_rank1_for_others:
             for name in other_methods_list:
                 calc_target_tpr_and_rank(other_methods_data[name]['rocs'],
-                                         other_methods_data[name]['Rank-N_1'],
-                                         other_methods_data[name]['Rank-N_10'],
+                                         other_methods_data[name]['Rank_1'],
+                                         other_methods_data[name]['Rank_10'],
                                          save_dir, name,
                                          fp_tpr_sum=fp_tpr_sum,
                                          fp_rank_sum=fp_rank_sum)
@@ -663,7 +663,7 @@ def plot_megaface_result(your_method_dirs, your_method_labels,
         else:
             _color = np.random.rand(3)
 
-        ax.semilogx(n_distractors, your_methods_data[j]['Rank-N_1'],
+        ax.semilogx(n_distractors, your_methods_data[j]['Rank_1'],
                     label=your_method_labels[j],
                     c=_color)
         color_idx += 1
@@ -678,7 +678,7 @@ def plot_megaface_result(your_method_dirs, your_method_labels,
                 _color = np.random.rand(3)
             ax.semilogx(
                 n_distractors,
-                other_methods_data[name]['Rank-N_1'],
+                other_methods_data[name]['Rank_1'],
                 label=name,
                 c=_color)
             color_idx += 1
@@ -688,7 +688,7 @@ def plot_megaface_result(your_method_dirs, your_method_labels,
     ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
 
     ax.set_xlabel('#distractors (log scale)')
-    ax.set_ylabel('Identification rate')
+    ax.set_ylabel('Identification Rate (Rank-1)')
 
     ax.set_xlim([10, 1e6])
     ax.set_ylim([ymin, 1])

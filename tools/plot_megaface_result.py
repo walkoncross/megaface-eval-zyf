@@ -456,7 +456,7 @@ def plot_megaface_result(your_method_dirs, your_method_labels,
 
         # plt.grid(True, which='both')
 
-        ax.set_xlabel('Rank-N (log scale)')
+        ax.set_xlabel('Rank (log scale)')
         ax.set_ylabel('Identification Rate')
 
         plt.legend(loc='lower right')
@@ -627,7 +627,7 @@ def plot_megaface_result(your_method_dirs, your_method_labels,
         ax.set_xlim([1, 1e4])
         ax.set_ylim([ymin, 1])
 
-        ax.set_xlabel('Rank-N (log scale)')
+        ax.set_xlabel('Rank (log scale)')
         ax.set_ylabel('Identification Rate')
 
         # Put a legend to the right of the current axis

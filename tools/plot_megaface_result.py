@@ -18,7 +18,7 @@ matplotlib.use('agg')
 import matplotlib.pyplot as plt
 from matplotlib.ticker import AutoMinorLocator
 
-from interpolation import linear_interp, nearest_neighbor_interp
+from interpolation import linear_interp, linear_interp_logx, nearest_neighbor_interp
 
 
 def generate_n_distractors():
@@ -63,25 +63,32 @@ def interp_target_tpr(roc, target_fpr):
         print 'target_fpr out of bound, will return -1'
         return -1.0
 
-    # This interpolation might be the one that MegaFace officially uses
-    for i, fpr in enumerate(roc[0]):
-        if fpr > target_fpr:
-            return roc[1][i]
-
-    # linear interpolation
+    # # This interpolation might be the one that MegaFace officially uses
     # for i, fpr in enumerate(roc[0]):
     #     if fpr > target_fpr:
-    #         break
+    #         return roc[1][i]
 
+    # linear interpolation
+    for i, fpr in enumerate(roc[0]):
+        if fpr > target_fpr:
+            break
+
+    # linear x interpolation
     # target_tpr = linear_interp(target_fpr,
     #                              roc[0][i - 1], roc[0][i],
     #                              roc[1][i - 1], roc[1][i]
     #                              )
 
+    # linear logx interpolation
+    target_tpr = linear_interp_logx(target_fpr,
+                                 roc[0][i - 1], roc[0][i],
+                                 roc[1][i - 1], roc[1][i]
+                                 )
+
     # NN interpolation
-#    target_tpr = nearest_neighbor_interp(target_fpr, roc[0], roc[1])
-#
-#    return target_tpr
+    # target_tpr = nearest_neighbor_interp(target_fpr, roc[0], roc[1])
+
+    return target_tpr
 
 
 def interp_target_rank_recall(cmc, target_rank):

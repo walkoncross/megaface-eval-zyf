@@ -384,6 +384,7 @@ def plot_megaface_result(your_method_dirs, your_method_labels,
 
         calc_target_tpr_and_rank(rocs, rank_1, rank_10,
                                  save_dir, your_method_labels[j],
+                                 target_fpr,
                                  fp_tpr_sum=fp_tpr_sum,
                                  fp_rank_sum=fp_rank_sum)
 
@@ -533,6 +534,7 @@ def plot_megaface_result(your_method_dirs, your_method_labels,
                                          other_methods_data[name]['Rank_1'],
                                          other_methods_data[name]['Rank_10'],
                                          save_dir, name,
+                                         target_fpr,
                                          fp_tpr_sum=fp_tpr_sum,
                                          fp_rank_sum=fp_rank_sum)
 

@@ -81,9 +81,9 @@ def interp_target_tpr(roc, target_fpr):
 
     # linear logx interpolation
     target_tpr = linear_interp_logx(target_fpr,
-                                 roc[0][i - 1], roc[0][i],
-                                 roc[1][i - 1], roc[1][i]
-                                 )
+                                    roc[0][i - 1], roc[0][i],
+                                    roc[1][i - 1], roc[1][i]
+                                    )
 
     # NN interpolation
     # target_tpr = nearest_neighbor_interp(target_fpr, roc[0], roc[1])
@@ -257,12 +257,12 @@ def calc_target_tpr_and_rank(rocs, rank_1, rank_10, save_dir,
 
     for i, roc in enumerate(rocs):
         target_tpr = interp_target_tpr(roc, target_fpr)
-        write_string = '%7d %5.4f\n' % (n_distractors[i], target_tpr)
+        write_string = '%7d %7.6f\n' % (n_distractors[i], target_tpr)
         print write_string
         fp_tpr.write(write_string)
 
         if fp_tpr_sum:
-            write_string_sum += "\t{:<7.4f}".format(target_tpr)
+            write_string_sum += "\t{:<9.6f}".format(target_tpr)
 
     if fp_tpr_sum:
         fp_tpr_sum.write(write_string_sum + '\n')
@@ -283,11 +283,11 @@ def calc_target_tpr_and_rank(rocs, rank_1, rank_10, save_dir,
     fp_rank.write(write_string)
 
     for i, rank in enumerate(rank_1):
-        write_string = '%7d  %5.4f\n' % (n_distractors[i], rank)
+        write_string = '%7d  %7.6f\n' % (n_distractors[i], rank)
         print write_string
         fp_rank.write(write_string)
         if fp_rank_sum:
-            write_string_sum += "\t{:<14.4f}".format(rank)
+            write_string_sum += "\t{:<16.6f}".format(rank)
 
     write_string = '\nRank_10 recall at different #distractors\n'
     write_string += '#distractors  recall\n'
@@ -295,11 +295,11 @@ def calc_target_tpr_and_rank(rocs, rank_1, rank_10, save_dir,
     fp_rank.write(write_string)
 
     for i, rank in enumerate(rank_10):
-        write_string = '%7d  %5.4f\n' % (n_distractors[i], rank)
+        write_string = '%7d  %7.6f\n' % (n_distractors[i], rank)
         print write_string
         fp_rank.write(write_string)
         if fp_rank_sum:
-            write_string_sum += "\t{:<14.4f}".format(rank)
+            write_string_sum += "\t{:<16.6f}".format(rank)
 
     if fp_rank_sum:
         fp_rank_sum.write(write_string_sum + '\n')
@@ -315,7 +315,8 @@ def plot_megaface_result(your_method_dirs, your_method_labels,
                          other_methods_dir=None,
                          save_tpr_and_rank1_for_others=False,
                          ymin=0, minor_ticks=5,
-                         target_fpr=1e-6):
+                         target_fpr=1e-6,
+                         show_plot=False):
     probe_name = probe_name.lower()
     valid_probe_names = ['facescrub', 'fgnet', 'idprobe']
     if not probe_name in valid_probe_names:
@@ -341,14 +342,16 @@ def plot_megaface_result(your_method_dirs, your_method_labels,
 
     your_methods_data = []
 
-    fn_tpr_sum = osp.join(save_dir, 'TPRs-at-FPR_%g_summary_all.txt' % target_fpr)
+    fn_tpr_sum = osp.join(
+        save_dir, 'TPRs-at-FPR_%g_summary_all.txt' % target_fpr)
     fn_rank_sum = osp.join(save_dir, 'Rank_vs_distractors_summary_all.txt')
 
     fp_tpr_sum = open(fn_tpr_sum, 'w')
     fp_rank_sum = open(fn_rank_sum, 'w')
 
     # write table head for TPR summary
-    write_string = 'TPR@FPR={:g} at different #distractors\n\n'.format(target_fpr)
+    write_string = 'TPR@FPR={:g} at different #distractors\n\n'.format(
+        target_fpr)
     fp_tpr_sum.write(write_string)
     write_string = '{:32}'.format('method')
     for it in n_distractors:
@@ -431,7 +434,8 @@ def plot_megaface_result(your_method_dirs, your_method_labels,
         ax.set_ylabel('TPR')
 
         plt.legend(loc='lower right')
-        plt.show()
+        if show_plot:
+            plt.show()
         save_fn = osp.join(save_dir,
                            'roc_under_diff_distractors_%s.png' % your_method_labels[j])
         fig.savefig(save_fn, bbox_inches='tight')
@@ -468,7 +472,8 @@ def plot_megaface_result(your_method_dirs, your_method_labels,
         ax.set_ylabel('Identification Rate')
 
         plt.legend(loc='lower right')
-        plt.show()
+        if show_plot:
+            plt.show()
         save_fn = osp.join(save_dir, 'cmc_under_diff_distractors_%s.png'
                            % your_method_labels[j])
         fig.savefig(save_fn, bbox_inches='tight')
@@ -600,7 +605,8 @@ def plot_megaface_result(your_method_dirs, your_method_labels,
 
         # plt.grid(True, which='both')
     #    plt.legend()
-        plt.show()
+        if show_plot:
+            plt.show()
         fig.savefig(osp.join(save_dir, 'verification_roc_%s.png' % pn),
                     bbox_inches='tight')
 
@@ -657,7 +663,8 @@ def plot_megaface_result(your_method_dirs, your_method_labels,
         # plt.grid(True, which='both')
 
     #    plt.legend()
-        plt.show()
+        if show_plot:
+            plt.show()
         fig.savefig(osp.join(save_dir, 'identification_recall_vs_rank_%s.png' % pn),
                     bbox_inches='tight')
 
@@ -719,7 +726,8 @@ def plot_megaface_result(your_method_dirs, your_method_labels,
     # plt.grid(True, which='both')
 
 #    plt.legend()
-    plt.show()
+    if show_plot:
+        plt.show()
     fig.savefig(osp.join(save_dir, 'identification_rank_1_vs_distractors.png'),
                 bbox_inches='tight')
 
@@ -748,6 +756,7 @@ if __name__ == '__main__':
 
     y_min = 0
     minor_ticks = 5
+    show_plot = False
 
     for probe_name in probesets:
         save_dir = './rlt_%s_test_results' % probe_name
@@ -756,5 +765,6 @@ if __name__ == '__main__':
                              save_dir,
                              other_methods_dir,
                              save_tpr_and_rank1_for_others,
-                             y_min, minor_ticks
+                             y_min, minor_ticks,
+                             show_plot=show_plot
                              )

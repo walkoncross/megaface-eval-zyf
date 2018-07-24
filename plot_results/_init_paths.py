@@ -6,4 +6,7 @@ def add_path(path):
     if path not in sys.path:
         sys.path.insert(0, path)
 
-add_path(osp.abspath('../tools'))
+
+path = osp.abspath(osp.join(__file__, '../../tools'))
+print path
+add_path(path)
